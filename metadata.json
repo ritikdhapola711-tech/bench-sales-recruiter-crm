@@ -1,0 +1,6 @@
+{
+  "name": "Bench & Sales Recruiter CRM",
+  "description": "LinkedIn C2C Lead Finder & automated recruiter outreach engine for Java Developer C2C bench sales and IT staffing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
