@@ -160,12 +160,14 @@ export async function runAutomationScan(params: {
 }
 
 export async function sendOutreachEmail(data: {
+  leadId?: string;
   postId?: string;
   recruiterEmail: string;
   recruiterName: string;
   companyName: string;
   subject: string;
   body: string;
+  markAsContacted?: boolean;
 }) {
   const res = await fetch('/api/automation/send-email', {
     method: 'POST',

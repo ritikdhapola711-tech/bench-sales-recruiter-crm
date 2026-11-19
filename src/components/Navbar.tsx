@@ -16,8 +16,10 @@ import {
   X,
   ExternalLink,
   Sparkles,
-  Zap
+  Zap,
+  Mail
 } from 'lucide-react';
+import { handleAvatarError } from '../utils/avatar.ts';
 
 interface NavbarProps {
   activeTab: 'directory' | 'pipeline' | 'import' | 'automation';
@@ -26,6 +28,7 @@ interface NavbarProps {
   setSearchQuery: (q: string) => void;
   onOpenAddModal: () => void;
   onOpenImportModal: () => void;
+  onOpenEmailOutreach?: () => void;
   onExportCsv: () => void;
   onResetSeed: () => void;
   totalLeadsCount: number;
@@ -39,6 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setSearchQuery,
   onOpenAddModal,
   onOpenImportModal,
+  onOpenEmailOutreach,
   onExportCsv,
   onResetSeed,
   totalLeadsCount,
@@ -169,16 +173,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-[11px] font-medium leading-none whitespace-nowrap">Import</span>
             </button>
 
-            {/* Messaging / InMail trigger */}
+            {/* Email Outreach Compose Trigger */}
             <button
               type="button"
               onClick={() => {
-                setActiveTab('directory');
+                if (onOpenEmailOutreach) {
+                  onOpenEmailOutreach();
+                } else {
+                  setActiveTab('directory');
+                }
               }}
-              className="hidden lg:flex flex-col items-center justify-center min-w-[56px] h-[52px] text-center border-b-2 border-transparent text-[#666666] hover:text-[#191919] transition-colors relative"
+              className="hidden sm:flex flex-col items-center justify-center min-w-[64px] h-[52px] text-center border-b-2 border-transparent text-[#666666] hover:text-[#0a66c2] transition-colors relative"
+              title="Compose Email Outreach"
             >
-              <MessageSquare className="w-5 h-5 mb-0.5" />
-              <span className="text-[11px] font-medium leading-none whitespace-nowrap">Messaging</span>
+              <Mail className="w-5 h-5 mb-0.5" />
+              <span className="text-[11px] font-medium leading-none whitespace-nowrap">Outreach</span>
             </button>
 
             {/* Vertical Divider */}
@@ -192,9 +201,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex flex-col items-center justify-center min-w-[50px] h-[52px] text-[#666666] hover:text-[#191919] transition-colors"
               >
                 <img 
-                  src="/src/assets/images/avatar_marcus_cro_1792802861859.jpg"
+                  src="/assets/images/avatar_marcus_cro_1792802861859.jpg"
                   alt="Account Profile"
-                  className="w-5 h-5 rounded-full object-cover ring-1 ring-[#e0dfdc]" 
+                  onError={(e) => handleAvatarError(e, 'Marcus Vance', 'Recruiter')}
+                  referrerPolicy="no-referrer"
+                  className="w-5 h-5 rounded-full object-cover ring-1 ring-[#e0dfdc] bg-[#e2e8f0]" 
                 />
                 <div className="flex items-center text-[11px] font-medium mt-0.5 leading-none">
                   <span>Me</span>
@@ -209,9 +220,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="px-4 py-2 border-b border-[#e0dfdc]">
                     <div className="flex items-center gap-2.5">
                       <img
-                        src="/src/assets/images/avatar_marcus_cro_1792802861859.jpg"
+                        src="/assets/images/avatar_marcus_cro_1792802861859.jpg"
                         alt="Account Profile"
-                        className="w-10 h-10 rounded-full object-cover border border-[#e0dfdc] shadow-2xs"
+                        onError={(e) => handleAvatarError(e, 'Marcus Vance', 'Recruiter')}
+                        referrerPolicy="no-referrer"
+                        className="w-10 h-10 rounded-full object-cover border border-[#e0dfdc] shadow-2xs bg-[#e2e8f0]"
                       />
                       <div>
                         <div className="font-semibold text-sm">Bench &amp; Sales CRM</div>

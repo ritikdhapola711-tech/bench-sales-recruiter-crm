@@ -169,6 +169,27 @@ Bench & Sales Recruitment Team
 Direct: +1 (321) 209-5351 | sales@benchcrm.io`
   },
   {
+    id: 'tpl-candidate-outreach',
+    name: 'Direct Candidate / Prospect Opportunity Outreach (Digital Marketing & Growth)',
+    subject: 'Exciting Digital Marketing & Growth Role Opportunity - {{recruiter_name}}',
+    body: `Hi {{recruiter_name}},
+
+Hope you are doing well!
+
+I reviewed your background in Digital Marketing & SEO (including your experience at JobPrepped and Cortracker 360) and wanted to reach out directly regarding an immediate growth marketing and SEO opportunity with one of our direct clients.
+
+Key Highlights:
+• Role Focus: Digital Marketing, SEO, Google Ads, & Email Automation
+• Engagement Type: C2C / W2 / Full-Time options available
+• Location: Remote / Hybrid (US)
+
+Please let me know your current availability and expected rate/compensation so we can schedule a brief intro call and submit your profile.
+
+Best regards,
+Bench & Sales Recruitment Team
+Direct: +1 (321) 209-5351 | sales@benchcrm.io`
+  },
+  {
     id: 'tpl-c2c-general',
     name: 'Weekly Bench Consultant Hotlist Dispatch',
     subject: 'Updated C2C Bench Hotlist (Java, DevOps, Python, React) - {{company_name}}',
@@ -192,6 +213,7 @@ class AutomationEngine {
   private posts: ExtractedRecruiterPost[] = [...SAMPLE_RECRUITER_POSTS];
   private emailLogs: Array<{
     id: string;
+    leadId?: string;
     recruiterEmail: string;
     recruiterName: string;
     subject: string;
@@ -228,18 +250,21 @@ class AutomationEngine {
   }
 
   public sendOutreachEmail(data: {
+    leadId?: string;
     postId?: string;
     recruiterEmail: string;
     recruiterName: string;
     companyName: string;
     subject: string;
     body: string;
-  }): { success: boolean; logId: string; message: string } {
+    markAsContacted?: boolean;
+  }): { success: boolean; logId: string; message: string; updatedLead?: LinkedInLead | null } {
     const now = new Date().toISOString();
     const logId = 'email-' + Date.now();
 
     this.emailLogs.unshift({
       id: logId,
+      leadId: data.leadId,
       recruiterEmail: data.recruiterEmail,
       recruiterName: data.recruiterName,
       subject: data.subject,
@@ -248,7 +273,7 @@ class AutomationEngine {
       status: 'Delivered'
     });
 
-    // Mark post as outreach sent
+    // Mark post as outreach sent if triggered from C2C post
     if (data.postId) {
       const post = this.posts.find(p => p.id === data.postId);
       if (post) {
@@ -257,30 +282,57 @@ class AutomationEngine {
       }
     }
 
-    // Automatically create or update recruiter as a lead in CRM with status "Contacted"
+    let updatedLead: LinkedInLead | null = null;
+
+    // Check if this email corresponds to an existing CRM lead (by leadId or email)
     try {
-      const post = data.postId ? this.posts.find(p => p.id === data.postId) : undefined;
-      leadsStore.create({
-        fullName: data.recruiterName,
-        jobTitle: post?.recruiterTitle || 'Technical Recruiter',
-        company: data.companyName,
-        email: data.recruiterEmail,
-        avatarUrl: post?.avatarUrl,
-        status: 'Contacted',
-        connectionDegree: '2nd',
-        location: post?.location || 'United States',
-        industry: 'IT Staffing & Consulting',
-        tags: ['C2C Outreach', 'Java Requirement', 'Automated Lead Finder'],
-        notesSummary: `Sent C2C outreach email regarding Java requirement on ${new Date().toLocaleDateString()}: "${data.subject}"`
-      });
+      const existingById = data.leadId ? leadsStore.getById(data.leadId) : undefined;
+      const existingByEmail = !existingById
+        ? leadsStore.getAll().find(l => l.email && l.email.toLowerCase() === data.recruiterEmail.trim().toLowerCase())
+        : undefined;
+      const targetLead = existingById || existingByEmail;
+
+      if (targetLead) {
+        const previewText = data.body.trim().slice(0, 180) + (data.body.trim().length > 180 ? '...' : '');
+        const noteText = `Email sent to ${data.recruiterEmail} — Subject: "${data.subject}"\n${previewText}`;
+        updatedLead = leadsStore.addNote(targetLead.id, 'Email Outreach', noteText);
+
+        // Save email on lead if missing, and optionally transition New -> Contacted
+        const patchUpdates: Partial<LinkedInLead> = {};
+        if (!targetLead.email && data.recruiterEmail) {
+          patchUpdates.email = data.recruiterEmail.trim();
+        }
+        if (data.markAsContacted !== false && targetLead.status === 'New') {
+          patchUpdates.status = 'Contacted';
+        }
+        if (Object.keys(patchUpdates).length > 0) {
+          updatedLead = leadsStore.update(targetLead.id, patchUpdates);
+        }
+      } else {
+        const post = data.postId ? this.posts.find(p => p.id === data.postId) : undefined;
+        updatedLead = leadsStore.create({
+          fullName: data.recruiterName,
+          jobTitle: post?.recruiterTitle || 'Technical Recruiter',
+          company: data.companyName,
+          email: data.recruiterEmail,
+          avatarUrl: post?.avatarUrl,
+          status: data.markAsContacted === false ? 'New' : 'Contacted',
+          connectionDegree: '2nd',
+          location: post?.location || 'United States',
+          industry: 'IT Staffing & Consulting',
+          tags: ['Email Outreach', 'Automated Lead Finder'],
+          notesSummary: `Sent outreach email on ${new Date().toLocaleDateString()}: "${data.subject}"`
+        });
+      }
     } catch (e) {
-      console.warn('Could not auto-add to leadsStore:', e);
+      console.warn('Could not sync email outreach to leadsStore:', e);
     }
 
     return {
       success: true,
       logId,
-      message: `Outreach email delivered successfully to ${data.recruiterEmail}`
+      message: `Outreach email delivered successfully to ${data.recruiterEmail}`,
+      updatedLead
     };
   }
 

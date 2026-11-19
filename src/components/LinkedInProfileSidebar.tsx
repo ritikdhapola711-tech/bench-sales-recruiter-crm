@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bookmark, Users, UserCheck, ShieldCheck, TrendingUp, Sparkles, Filter } from 'lucide-react';
 import type { DashboardStats } from '../types/lead.ts';
+import { handleAvatarError } from '../utils/avatar.ts';
 
 interface LinkedInProfileSidebarProps {
   stats: DashboardStats | null;
@@ -31,8 +32,10 @@ export const LinkedInProfileSidebar: React.FC<LinkedInProfileSidebarProps> = ({
         {/* Avatar & Info */}
         <div className="px-4 pb-4 pt-0 text-center relative -mt-8">
           <img
-            src="/src/assets/images/avatar_marcus_cro_1792802861859.jpg"
+            src="/assets/images/avatar_marcus_cro_1792802861859.jpg"
             alt="Bench Sales Director"
+            onError={(e) => handleAvatarError(e, 'Bench Sales Director', 'Recruiter')}
+            referrerPolicy="no-referrer"
             className="w-16 h-16 rounded-full border-2 border-white object-cover mx-auto shadow-xs bg-[#e2e8f0]"
           />
           <h3 className="mt-2 text-sm font-semibold text-[#191919] hover:underline cursor-pointer">

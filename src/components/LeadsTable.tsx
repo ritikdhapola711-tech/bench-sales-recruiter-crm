@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import type { LinkedInLead, LeadStatus } from '../types/lead.ts';
 import { StatusBadge, ALL_STATUSES } from './StatusBadge.tsx';
-import { getDeterministicAvatar } from '../utils/avatar.ts';
+import { getDeterministicAvatar, handleAvatarError } from '../utils/avatar.ts';
 
 interface LeadsTableProps {
   leads: LinkedInLead[];
@@ -49,6 +49,7 @@ interface LeadsTableProps {
   onExportSelected: (selectedLeads: LinkedInLead[]) => void;
   onOpenAddModal: () => void;
   onOpenImportModal: () => void;
+  onOpenEmailOutreach?: (lead: LinkedInLead) => void;
 }
 
 export const LeadsTable: React.FC<LeadsTableProps> = ({
@@ -73,6 +74,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
   onExportSelected,
   onOpenAddModal,
   onOpenImportModal,
+  onOpenEmailOutreach,
 }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
@@ -364,9 +366,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                       <img
                         src={lead.avatarUrl || getDeterministicAvatar(lead.fullName, lead.jobTitle)}
                         alt={lead.fullName}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = getDeterministicAvatar(lead.fullName, lead.jobTitle);
-                        }}
+                        onError={(e) => handleAvatarError(e, lead.fullName, lead.jobTitle)}
                         referrerPolicy="no-referrer"
                         className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-2xs bg-[#e2e8f0]"
                       />
@@ -448,13 +448,26 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
 
                     {/* LinkedIn Signature Action Buttons */}
                     <div className="flex items-center gap-2">
+                      {/* Email Outreach Button */}
+                      {onOpenEmailOutreach && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenEmailOutreach(lead)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 border border-[#0a66c2] text-[#0a66c2] hover:bg-[#ebf4fd] font-semibold text-xs rounded-full transition-all"
+                          title={`Send email to ${lead.fullName}`}
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>Email</span>
+                        </button>
+                      )}
+
                       {/* Secondary Outline LinkedIn Button: Message */}
                       <button
                         type="button"
                         onClick={() => onViewLead(lead)}
-                        className="flex items-center gap-1.5 px-4 py-1.5 border border-[#0a66c2] text-[#0a66c2] hover:bg-[#ebf4fd] hover:border-2 font-semibold text-xs rounded-full transition-all"
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 border border-[#e0dfdc] text-[#191919] hover:bg-[#f3f2ef] font-semibold text-xs rounded-full transition-all"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
+                        <MessageSquare className="w-3.5 h-3.5 text-[#666666]" />
                         <span>Message</span>
                       </button>
 
@@ -585,9 +598,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                           <img
                             src={lead.avatarUrl || getDeterministicAvatar(lead.fullName, lead.jobTitle)}
                             alt={lead.fullName}
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = getDeterministicAvatar(lead.fullName, lead.jobTitle);
-                            }}
+                            onError={(e) => handleAvatarError(e, lead.fullName, lead.jobTitle)}
                             referrerPolicy="no-referrer"
                             className="w-8 h-8 rounded-full object-cover shrink-0 border border-[#e0dfdc] bg-[#e2e8f0]"
                           />
@@ -635,6 +646,16 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
 
                       <td className="py-2.5 px-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
+                          {onOpenEmailOutreach && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenEmailOutreach(lead)}
+                              className="p-1 text-[#0a66c2] hover:bg-[#ebf4fd] rounded-full transition-colors"
+                              title={`Send Email to ${lead.fullName}`}
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => onViewLead(lead)}

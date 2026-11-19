@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { LinkedInLead, LeadStatus } from '../types/lead.ts';
 import { StatusBadge } from './StatusBadge.tsx';
-import { getDeterministicAvatar } from '../utils/avatar.ts';
+import { getDeterministicAvatar, handleAvatarError } from '../utils/avatar.ts';
 
 interface LeadDetailDrawerProps {
   lead: LinkedInLead | null;
@@ -30,6 +30,7 @@ interface LeadDetailDrawerProps {
   onEdit: (lead: LinkedInLead) => void;
   onUpdateStatus: (id: string, newStatus: LeadStatus) => void;
   onAddNote: (id: string, text: string) => Promise<void>;
+  onOpenEmailOutreach?: (lead: LinkedInLead) => void;
 }
 
 export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
@@ -39,6 +40,7 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
   onEdit,
   onUpdateStatus,
   onAddNote,
+  onOpenEmailOutreach,
 }) => {
   const [newNote, setNewNote] = useState('');
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
@@ -61,6 +63,15 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
 
   const getDraftMessage = () => {
     const firstName = lead.fullName.split(' ')[0] || 'there';
+    const isMarketing =
+      lead.jobTitle.toLowerCase().includes('marketing') ||
+      (lead.industry || '').toLowerCase().includes('marketing') ||
+      (lead.tags || []).some(t => /seo|marketing|ads/i.test(t));
+
+    if (isMarketing) {
+      return `Hi ${firstName}, reviewed your background as ${lead.jobTitle} (${lead.company}) and your focus on Digital Marketing, SEO, Google Ads, and Email Automation. We have an immediate growth marketing role with one of our direct US clients — would love to connect and share details!`;
+    }
+
     return `Hi ${firstName}, loved seeing your leadership work as ${lead.jobTitle} at ${lead.company}. We are helping enterprise teams in ${lead.industry || 'the tech space'} streamline high-volume prospect outreach and pipeline velocity. Would love to connect and share a quick 2-minute overview if you're exploring options this quarter!`;
   };
 
@@ -119,9 +130,7 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                 <img
                   src={lead.avatarUrl || getDeterministicAvatar(lead.fullName, lead.jobTitle)}
                   alt={lead.fullName}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = getDeterministicAvatar(lead.fullName, lead.jobTitle);
-                  }}
+                  onError={(e) => handleAvatarError(e, lead.fullName, lead.jobTitle)}
                   referrerPolicy="no-referrer"
                   className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-xs bg-[#e2e8f0]"
                 />
@@ -164,14 +173,25 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons: Message / Open LinkedIn / Update Status */}
+              {/* Action Buttons: Send Email / Open LinkedIn / Update Status */}
               <div className="mt-4 flex flex-wrap items-center gap-2">
+                {onOpenEmailOutreach && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenEmailOutreach(lead)}
+                    className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0a66c2] hover:bg-[#004182] text-white font-semibold text-xs rounded-full shadow-2xs transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Send Email</span>
+                  </button>
+                )}
+
                 {lead.linkedinUrl && (
                   <a
                     href={lead.linkedinUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0a66c2] hover:bg-[#004182] text-white font-semibold text-xs rounded-full shadow-2xs transition-colors"
+                    className="flex items-center gap-1.5 px-4 py-1.5 border border-[#0a66c2] text-[#0a66c2] hover:bg-[#ebf4fd] font-semibold text-xs rounded-full transition-colors"
                   >
                     <Linkedin className="w-3.5 h-3.5" />
                     <span>View LinkedIn Profile</span>
@@ -232,9 +252,21 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                   <Mail className="w-4 h-4 text-[#666666]" /> Email
                 </span>
                 {lead.email ? (
-                  <a href={`mailto:${lead.email}`} className="font-semibold text-[#0a66c2] hover:underline">
-                    {lead.email}
-                  </a>
+                  <div className="flex items-center gap-2">
+                    {onOpenEmailOutreach ? (
+                      <button
+                        type="button"
+                        onClick={() => onOpenEmailOutreach(lead)}
+                        className="font-semibold text-[#0a66c2] hover:underline"
+                      >
+                        {lead.email}
+                      </button>
+                    ) : (
+                      <a href={`mailto:${lead.email}`} className="font-semibold text-[#0a66c2] hover:underline">
+                        {lead.email}
+                      </a>
+                    )}
+                  </div>
                 ) : (
                   <span className="italic text-[#8c8c8c]">No email provided</span>
                 )}

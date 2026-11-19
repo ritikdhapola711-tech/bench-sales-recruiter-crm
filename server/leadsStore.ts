@@ -983,6 +983,33 @@ const INITIAL_SEEDS: LinkedInLead[] = [
     ],
     createdAt: '2026-10-23T05:30:00Z',
     updatedAt: '2026-10-23T05:30:00Z'
+  },
+  {
+    id: 'lead-35',
+    fullName: 'Siddhu Kolamala',
+    jobTitle: 'Digital Marketing Specialist',
+    company: 'Independent / Marketing',
+    linkedinUrl: 'https://www.linkedin.com/in/siddhu-kolamala',
+    avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&auto=format&fit=crop&crop=faces&q=80',
+    email: 'siddhu.kolamala@gmail.com',
+    phone: '+1 (312) 845-9210',
+    location: 'Chicago, IL',
+    industry: 'Digital Marketing & Growth',
+    status: 'New',
+    connectionDegree: '1st',
+    leadScore: 95,
+    tags: ['Digital Marketing', 'SEO', 'Google Ads', 'Email Automation'],
+    notesSummary: 'Digital Marketing Specialist experienced at JobPrepped and Cortracker 360. Focused on SEO, Google Ads, growth campaigns, and Email Automation.',
+    notesTimeline: [
+      {
+        id: 'note-35-1',
+        author: 'You',
+        text: 'Profile verified: Digital Marketing, SEO, Google Ads & Email Automation (JobPrepped, Cortracker 360). Open to C2C / W2 / Full-Time growth roles.',
+        createdAt: '2026-10-24T08:00:00Z'
+      }
+    ],
+    createdAt: '2026-10-24T08:00:00Z',
+    updatedAt: '2026-10-24T08:00:00Z'
   }
 ];
 
@@ -1010,9 +1037,12 @@ class LeadsStore {
           const existingIds = new Set(parsed.map((l: any) => l.id));
           const missingSeeds = INITIAL_SEEDS.filter(s => !existingIds.has(s.id));
 
-          // Also update avatarUrls and fields for existing seed leads if improved
+          // Also update avatarUrls and migrate legacy lead-35 profile if still Java-seeded
           const updated = parsed.map((lead: any) => {
             const seed = INITIAL_SEEDS.find(s => s.id === lead.id);
+            if (seed && lead.id === 'lead-35' && (lead.fullName === 'Siddhu Nair' || String(lead.jobTitle || '').includes('Java'))) {
+              return { ...seed };
+            }
             if (seed && (!lead.avatarUrl || lead.avatarUrl.includes('placeholder'))) {
               return { ...lead, avatarUrl: seed.avatarUrl };
             }

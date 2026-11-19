@@ -304,17 +304,19 @@ app.post('/api/automation/scan', (req, res) => {
 
 app.post('/api/automation/send-email', (req, res) => {
   try {
-    const { postId, recruiterEmail, recruiterName, companyName, subject, body } = req.body;
-    if (!recruiterEmail) {
-      return res.status(400).json({ error: 'Recruiter email is required' });
+    const { leadId, postId, recruiterEmail, recruiterName, companyName, subject, body, markAsContacted } = req.body;
+    if (!recruiterEmail || !String(recruiterEmail).trim()) {
+      return res.status(400).json({ error: 'Recipient email is required' });
     }
     const result = automationEngine.sendOutreachEmail({
+      leadId,
       postId,
-      recruiterEmail,
+      recruiterEmail: String(recruiterEmail).trim(),
       recruiterName: recruiterName || 'Recruiter',
       companyName: companyName || 'Client Company',
       subject: subject || 'Available C2C Bench Consultant',
-      body: body || 'Please find our consultant profile attached.'
+      body: body || 'Please find our consultant profile attached.',
+      markAsContacted
     });
     res.json(result);
   } catch (error) {
@@ -334,6 +336,11 @@ app.get('/api/automation/email-logs', (_req, res) => {
 
 // Setup Vite middleware in dev or static files in production
 async function startServer() {
+  const publicPath = path.resolve(__dirname, 'public');
+  app.use(express.static(publicPath));
+  app.use('/assets', express.static(path.join(publicPath, 'assets')));
+  app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
+
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({

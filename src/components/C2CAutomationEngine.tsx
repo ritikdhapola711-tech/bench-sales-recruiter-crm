@@ -35,7 +35,7 @@ import {
   fetchEmailTemplates, 
   fetchEmailLogs 
 } from '../services/api.ts';
-import { getDeterministicAvatar } from '../utils/avatar.ts';
+import { getDeterministicAvatar, handleAvatarError } from '../utils/avatar.ts';
 
 interface C2CAutomationEngineProps {
   onLeadAdded?: () => void;
@@ -462,9 +462,7 @@ export const C2CAutomationEngine: React.FC<C2CAutomationEngineProps> = ({
                       <img
                         src={avatar}
                         alt={post.recruiterName}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = getDeterministicAvatar(post.recruiterName, post.recruiterTitle);
-                        }}
+                        onError={(e) => handleAvatarError(e, post.recruiterName, post.recruiterTitle)}
                         referrerPolicy="no-referrer"
                         className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs shrink-0 bg-[#e2e8f0]"
                       />
@@ -861,9 +859,7 @@ export const C2CAutomationEngine: React.FC<C2CAutomationEngineProps> = ({
                   <img
                     src={activeOutreachPost.avatarUrl || getDeterministicAvatar(activeOutreachPost.recruiterName, activeOutreachPost.recruiterTitle)}
                     alt={activeOutreachPost.recruiterName}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = getDeterministicAvatar(activeOutreachPost.recruiterName, activeOutreachPost.recruiterTitle);
-                    }}
+                    onError={(e) => handleAvatarError(e, activeOutreachPost.recruiterName, activeOutreachPost.recruiterTitle)}
                     referrerPolicy="no-referrer"
                     className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-2xs shrink-0 bg-[#e2e8f0]"
                   />

@@ -27,6 +27,7 @@ import { LinkedInRightSidebar } from './components/LinkedInRightSidebar.tsx';
 import { AlexBermanProfileHeader } from './components/AlexBermanProfileHeader.tsx';
 import { AboutSection } from './components/AboutSection.tsx';
 import { C2CAutomationEngine } from './components/C2CAutomationEngine.tsx';
+import { EmailOutreachModal } from './components/EmailOutreachModal.tsx';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'directory' | 'pipeline' | 'import' | 'automation'>('directory');
@@ -47,7 +48,14 @@ export default function App() {
   const [selectedDetailLead, setSelectedDetailLead] = useState<LinkedInLead | null>(null);
   const [deletingLead, setDeletingLead] = useState<LinkedInLead | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailTargetLead, setEmailTargetLead] = useState<LinkedInLead | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const openEmailOutreach = (target: LinkedInLead | null = null) => {
+    setEmailTargetLead(target);
+    setIsEmailModalOpen(true);
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -252,138 +260,144 @@ export default function App() {
           setIsAddModalOpen(true);
         }}
         onOpenImportModal={() => setActiveTab('import')}
+        onOpenEmailOutreach={() => openEmailOutreach(null)}
         onExportCsv={() => handleExportCsv()}
         onResetSeed={() => setConfirmResetOpen(true)}
         totalLeadsCount={stats?.totalLeads ?? 0}
         newLeadsCount={stats?.newLeads ?? 0}
       />
 
-      {/* LinkedIn 3-Column Main Canvas */}
-      <main className="flex-1 max-w-[1128px] w-full mx-auto px-4 py-5">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-          {/* Left Column (225px width on desktop) */}
-          <div className="md:col-span-4 lg:col-span-3">
-            <LinkedInProfileSidebar
-              stats={stats}
-              activeStatusFilter={statusFilter}
-              onFilterStatus={(st) => {
-                setStatusFilter(st);
-                if (activeTab === 'import') setActiveTab('directory');
-              }}
-              activeConnectionFilter={connectionFilter}
-              onFilterConnection={(conn) => setConnectionFilter(conn)}
-              onOpenImport={() => setActiveTab('import')}
-              onOpenAutomation={() => setActiveTab('automation')}
-            />
+      {/* Main Content Area */}
+      {activeTab === 'pipeline' ? (
+        <main className="flex-1 max-w-[1128px] w-full mx-auto px-4 py-5 space-y-3">
+          <StatCards
+            stats={stats}
+            activeStatusFilter={statusFilter}
+            onFilterStatus={(st) => setStatusFilter(st)}
+            isLoading={isLoading}
+          />
+          <PipelineBoard
+            leads={leads}
+            onViewLead={(lead) => setSelectedDetailLead(lead)}
+            onUpdateStatus={handleUpdateStatus}
+            onOpenAddModal={() => {
+              setEditingLead(null);
+              setIsAddModalOpen(true);
+            }}
+            onOpenEmailOutreach={(lead) => openEmailOutreach(lead)}
+          />
+        </main>
+      ) : (
+        <main className="flex-1 max-w-[1128px] w-full mx-auto px-4 py-5">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            {/* Left Column (Profile & Navigation Filters) */}
+            <div className="md:col-span-4 lg:col-span-3">
+              <LinkedInProfileSidebar
+                stats={stats}
+                activeStatusFilter={statusFilter}
+                onFilterStatus={(st) => {
+                  setStatusFilter(st);
+                  if (activeTab === 'import') setActiveTab('directory');
+                }}
+                activeConnectionFilter={connectionFilter}
+                onFilterConnection={(conn) => setConnectionFilter(conn)}
+                onOpenImport={() => setActiveTab('import')}
+                onOpenAutomation={() => setActiveTab('automation')}
+              />
+            </div>
+
+            {/* Directory Tab: Authentic 3-Column LinkedIn Feed matching image_1.png */}
+            {activeTab === 'directory' ? (
+              <>
+                {/* Center Column */}
+                <div className="md:col-span-8 lg:col-span-6 space-y-3">
+                  <AlexBermanProfileHeader
+                    onOpenAddModal={() => {
+                      setEditingLead(null);
+                      setIsAddModalOpen(true);
+                    }}
+                    onOpenImportModal={() => setActiveTab('import')}
+                  />
+
+                  <AboutSection />
+
+                  <StatCards
+                    stats={stats}
+                    activeStatusFilter={statusFilter}
+                    onFilterStatus={(st) => setStatusFilter(st)}
+                    isLoading={isLoading}
+                  />
+
+                  <LeadsTable
+                    leads={leads}
+                    isLoading={isLoading}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    connectionFilter={connectionFilter}
+                    setConnectionFilter={setConnectionFilter}
+                    sortBy={sortBy}
+                    setSortBy={setSortBy}
+                    sortOrder={sortOrder}
+                    setSortOrder={setSortOrder}
+                    onViewLead={(lead) => setSelectedDetailLead(lead)}
+                    onEditLead={(lead) => setEditingLead(lead)}
+                    onDeleteLead={(lead) => setDeletingLead(lead)}
+                    onUpdateStatus={handleUpdateStatus}
+                    onBulkDelete={handleBulkDelete}
+                    onBulkUpdateStatus={handleBulkUpdateStatus}
+                    onExportSelected={(sel) => handleExportCsv(sel)}
+                    onOpenAddModal={() => {
+                      setEditingLead(null);
+                      setIsAddModalOpen(true);
+                    }}
+                    onOpenImportModal={() => setActiveTab('import')}
+                    onOpenEmailOutreach={(lead) => openEmailOutreach(lead)}
+                  />
+                </div>
+
+                {/* Right Column (People also viewed matching image_1.png) */}
+                <div className="hidden lg:block lg:col-span-3">
+                  <LinkedInRightSidebar
+                    onExportCsv={() => handleExportCsv()}
+                    onSelectLead={async (personLead) => {
+                      try {
+                        const created = await createLead(personLead);
+                        showToast(`Added ${created.fullName} to your pipeline.`);
+                        await loadData();
+                      } catch (err: any) {
+                        showToast('Lead already in directory');
+                      }
+                    }}
+                  />
+                </div>
+              </>
+            ) : activeTab === 'automation' ? (
+              /* Automation Tab: 9-Column Workspace */
+              <div className="md:col-span-8 lg:col-span-9 space-y-3">
+                <C2CAutomationEngine
+                  onLeadAdded={async () => {
+                    await loadData();
+                  }}
+                  showToast={showToast}
+                />
+              </div>
+            ) : (
+              /* Import Tab: 9-Column Workspace */
+              <div className="md:col-span-8 lg:col-span-9 space-y-3">
+                <ImportView
+                  onImportComplete={async () => {
+                    await loadData();
+                    showToast('Prospects successfully imported!');
+                    setActiveTab('directory');
+                  }}
+                />
+              </div>
+            )}
           </div>
-
-          {/* Center Column (Primary Feed / Profile View) */}
-          <div className="md:col-span-8 lg:col-span-6 space-y-4">
-            {/* 1. Recreated Profile Header matching image_1.png */}
-            <AlexBermanProfileHeader
-              onOpenAddModal={() => {
-                setEditingLead(null);
-                setIsAddModalOpen(true);
-              }}
-              onOpenImportModal={() => setActiveTab('import')}
-            />
-
-            {/* 2. Prominent About Section matching image_1.png */}
-            <AboutSection />
-
-            {/* 3. Pipeline Analytics Strip */}
-            <StatCards
-              stats={stats}
-              activeStatusFilter={statusFilter}
-              onFilterStatus={(st) => {
-                setStatusFilter(st);
-                if (activeTab === 'import') setActiveTab('directory');
-              }}
-              isLoading={isLoading}
-            />
-
-            {/* View Tab 1: Directory */}
-            {activeTab === 'directory' && (
-              <LeadsTable
-                leads={leads}
-                isLoading={isLoading}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                connectionFilter={connectionFilter}
-                setConnectionFilter={setConnectionFilter}
-                sortBy={sortBy}
-                setSortBy={setSortBy}
-                sortOrder={sortOrder}
-                setSortOrder={setSortOrder}
-                onViewLead={(lead) => setSelectedDetailLead(lead)}
-                onEditLead={(lead) => setEditingLead(lead)}
-                onDeleteLead={(lead) => setDeletingLead(lead)}
-                onUpdateStatus={handleUpdateStatus}
-                onBulkDelete={handleBulkDelete}
-                onBulkUpdateStatus={handleBulkUpdateStatus}
-                onExportSelected={(sel) => handleExportCsv(sel)}
-                onOpenAddModal={() => {
-                  setEditingLead(null);
-                  setIsAddModalOpen(true);
-                }}
-                onOpenImportModal={() => setActiveTab('import')}
-              />
-            )}
-
-            {/* View Tab 2: Pipeline Kanban */}
-            {activeTab === 'pipeline' && (
-              <PipelineBoard
-                leads={leads}
-                onViewLead={(lead) => setSelectedDetailLead(lead)}
-                onUpdateStatus={handleUpdateStatus}
-                onOpenAddModal={() => {
-                  setEditingLead(null);
-                  setIsAddModalOpen(true);
-                }}
-              />
-            )}
-
-            {/* View Tab 3: CSV Import View */}
-            {activeTab === 'import' && (
-              <ImportView
-                onImportComplete={async () => {
-                  await loadData();
-                  showToast('Prospects successfully imported!');
-                  setActiveTab('directory');
-                }}
-              />
-            )}
-
-            {/* View Tab 4: Automated LinkedIn C2C Lead Finder & Outreach Engine */}
-            {activeTab === 'automation' && (
-              <C2CAutomationEngine
-                onLeadAdded={async () => {
-                  await loadData();
-                }}
-                showToast={showToast}
-              />
-            )}
-          </div>
-
-          {/* Right Column (People also viewed matching image_1.png) */}
-          <div className="hidden lg:block lg:col-span-3">
-            <LinkedInRightSidebar
-              onExportCsv={() => handleExportCsv()}
-              onSelectLead={async (personLead) => {
-                try {
-                  const created = await createLead(personLead);
-                  showToast(`Added ${created.fullName} to your pipeline.`);
-                  await loadData();
-                } catch (err: any) {
-                  showToast('Lead already in directory');
-                }
-              }}
-            />
-          </div>
-        </div>
-      </main>
+        </main>
+      )}
 
       {/* Add / Edit Lead Profile Modal */}
       <LeadModal
@@ -407,6 +421,22 @@ export default function App() {
         }}
         onUpdateStatus={handleUpdateStatus}
         onAddNote={handleAddNote}
+        onOpenEmailOutreach={(lead) => openEmailOutreach(lead)}
+      />
+
+      {/* Email Outreach Compose Modal */}
+      <EmailOutreachModal
+        isOpen={isEmailModalOpen}
+        onClose={() => {
+          setIsEmailModalOpen(false);
+          setEmailTargetLead(null);
+        }}
+        lead={emailTargetLead}
+        leads={leads}
+        onEmailSent={async (msg) => {
+          showToast(msg);
+          await loadData();
+        }}
       />
 
       {/* Delete Confirmation Modal */}
